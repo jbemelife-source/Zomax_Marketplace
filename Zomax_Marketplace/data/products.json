@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1786578920219,
+    "name": "Demo Product",
+    "category": "fashion",
+    "price": 25000,
+    "oldPrice": null,
+    "rating": 5,
+    "reviews": 0,
+    "seller": "Demo Seller",
+    "location": "Lagos",
+    "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80",
+    "description": "Demo listing for API test",
+    "deal": false,
+    "stock": 5,
+    "createdAt": "2026-08-12T23:55:20.219Z"
+  }
+]

@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Zomax Marketplace</title>
+
+  <!-- Tailwind CSS browser CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" src="https://kommodo.ai/i/83QYs7D2KZdh4mOhMC3q" href="">
+  <script defer src="main.js?v=20260926-auth4"></script>
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="favicon_io/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+  <link rel="stylesheet" href="Assets/styles.css">
+</head>
+
+<body>
+  <!-- Site loader -->
+  <div id="siteLoader" class="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-slate-900 transition-opacity duration-300">
+    <div class="flex flex-col items-center gap-3">
+      <img src="Assets/logo.JPG" alt="Zomax" class="h-24 w-24 object-contain rounded-full shadow-md" />
+      <div class="text-xs text-slate-700 uppercase tracking-wider">shop great</div>
+      <div class="h-2 w-40 overflow-hidden rounded-full bg-slate-200/70 mt-2">
+        <div id="siteLoaderBar" class="h-2 loader-animate" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Site loader: animate progress and finish early when assets truly load
+    (function manageLoader() {
+      const loader = document.getElementById('siteLoader');
+      const bar = document.getElementById('siteLoaderBar');
+      const MAX_MS = 15000; // maximum time to keep loader visible (15s)
+      if (!loader || !bar) return;
+
+      let started = Date.now();
+      let finished = false;
+      let loadDone = false;
+      const pending = new Set();
+
+      // helper to finish when both page load and pending signals are cleared
+      function checkFinish() {
+        if (finished) return;
+        if (loadDone && pending.size === 0) finishNow();
+      }
+
+      // start at 0% and animate toward 90% over MAX_MS to show progress
+      bar.style.width = '0%';
+      bar.style.transition = `width ${MAX_MS}ms linear`;
+      requestAnimationFrame(() => { bar.style.width = '90%'; });
+
+      function finishNow() {
+        if (finished) return; finished = true;
+        // quick final fill
+        bar.style.transition = `width 300ms ease-out`;
+        bar.style.width = '100%';
+        // fade and remove after the small final animation
+        setTimeout(() => {
+          loader.classList.add('opacity-0');
+          setTimeout(() => { try { loader.remove(); } catch (e) { loader.style.display = 'none'; } }, 300);
+        }, 300);
+      }
+
+      // expose a small API so other code can notify loader progress or register signals
+      function registerImageSignal(img, id) {
+        const signalId = `img:${id}`;
+        img.dataset.preloadSignalId = signalId;
+        try { if (window.loader && typeof window.loader.addSignal === 'function') window.loader.addSignal(signalId); } catch (e) { }
+        if (img.complete) { try { if (window.loader && typeof window.loader.markDone === 'function') window.loader.markDone(signalId); } catch (e) { } return; }
+        img.addEventListener('load', () => { try { window.loader.markDone(signalId); } catch (e) { } }, { once: true });
+        img.addEventListener('error', () => { try { window.loader.markDone(signalId); } catch (e) { } }, { once: true });
+      }
+
+      async function detectLargeImage(img, thresholdBytes = 150000) {
+        if (!img || !img.src || img.dataset.preloadSignalId) return;
+        const srcUrl = img.currentSrc || img.src;
+        if (srcUrl.startsWith('data:')) return;
+
+        let isLarge = false;
+        if (img.complete && img.naturalWidth >= 1200) isLarge = true;
+
+        if (!isLarge) {
+          try {
+            const url = new URL(srcUrl, location.href);
+            if (url.origin === location.origin) {
+              const res = await fetch(url.href, { method: 'HEAD' });
+              const length = res.headers.get('content-length');
+              const size = length ? parseInt(length, 10) : NaN;
+              if (!Number.isNaN(size) && size >= thresholdBytes) isLarge = true;
+            }
+          } catch (e) { }
+        }
+
+        if (isLarge) registerImageSignal(img, srcUrl);
+      }
+
+      async function autoDetectLargeImages(thresholdBytes = 150000) {
+        try {
+          const imgs = Array.from(document.images).filter(img => img.src && !img.dataset.preloadSignalId);
+          await Promise.all(imgs.map(img => detectLargeImage(img, thresholdBytes)));
+        } catch (e) { }
+      }
+
+      window.loader = {
+        setProgress(pct) {
+          try { pct = Math.max(0, Math.min(100, Number(pct) || 0)); bar.style.transition = `width 300ms linear`; bar.style.width = pct + '%'; } catch (e) { }
+        },
+        addSignal(name) {
+          try { if (!name) return; pending.add(String(name)); } catch (e) { }
+        },
+        markDone(name) {
+          try { if (!name) return; pending.delete(String(name)); checkFinish(); } catch (e) { }
+        },
+        markApiDone() {
+          try { Array.from(pending).filter(s => s && s.startsWith('api:')).forEach(s => pending.delete(s)); checkFinish(); } catch (e) { }
+        },
+        addLargeImagesByUrl(urls) {
+          try {
+            if (!Array.isArray(urls)) return;
+            urls.forEach((url, idx) => {
+              const src = String(url || '').trim();
+              if (!src) return;
+              const img = document.querySelector(`img[src="${src}"]`) || document.querySelector(`img[data-src="${src}"]`);
+              if (img) registerImageSignal(img, src);
+            });
+          } catch (e) { }
+        },
+        autoDetectLargeImages(thresholdBytes = 150000) {
+          try { return autoDetectLargeImages(thresholdBytes); } catch (e) { return Promise.resolve(); }
+        }
+      };
+
+      // monitor images marked for preloading: <img data-preload> or <img class="preload">
+      try {
+        const imgs = Array.from(document.querySelectorAll('img[data-preload], img.preload'));
+        imgs.forEach((img, idx) => {
+          const id = img.dataset.preloadId || (`img:${idx}`);
+          registerImageSignal(img, id);
+        });
+      } catch (e) { }
+
+      // automatically detect any large images by HEAD size or dimensions
+      if (window.loader && typeof window.loader.autoDetectLargeImages === 'function') {
+        window.loader.autoDetectLargeImages(150000);
+      }
+
+      // If the page's load event fires (all images and subresources loaded), mark loadDone
+      if (document.readyState === 'complete') {
+        loadDone = true; checkFinish();
+      } else {
+        window.addEventListener('load', function () { loadDone = true; checkFinish(); }, { once: true });
+        // fallback: ensure loader doesn't hang longer than MAX_MS
+        setTimeout(() => { if (!finished) finishNow(); }, MAX_MS);
+      }
+    })();
+  </script>
+
+  <div id="app" class="min-h-screen">
+
+    <!-- Desktop Header -->
+    <header id="desktopHeader" class="hidden md:block sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur-sm">
+      <div class="mx-auto flex max-w-7xl items-center gap-8 px-6 py-4">
+        <button data-nav="home" onclick="navigate('home')" class="desktop-nav-item flex items-center gap-2">
+          <img src="Assets/logo.JPG" alt="Zomax" class="h-10 w-10 object-contain rounded-2xl shadow-lg shadow-orange-200" />
+          <span class="text-2xl font-black tracking-tight text-slate-900">zomax<span class="text-orange-500">.</span></span>
+        </button>
+
+        <div class="relative flex-1">
+          <i data-lucide="search" class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"></i>
+          <input
+            id="desktopSearch"
+            oninput="handleSearch(this.value)"
+            type="search"
+            placeholder="Search products, brands and categories"
+            class="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm"
+          />
+        </div>
+
+        <nav class="flex items-center gap-4 text-sm font-semibold">
+          <button data-nav="shop" onclick="navigate('shop')" class="desktop-nav-item text-slate-600 hover:text-orange-500">Shop</button>
+          <button data-nav="dashboard" onclick="navigate('dashboard')" class="desktop-nav-item text-slate-600 hover:text-orange-500">Seller</button>
+          <button data-nav="sell" onclick="navigate('sell')" class="desktop-nav-item text-slate-600 hover:text-orange-500">Sell</button>
+        </nav>
+
+        <button onclick="navigate('wishlist')" class="relative rounded-xl p-2 text-slate-600 hover:bg-orange-50 hover:text-orange-500">
+          <i data-lucide="heart" class="h-5 w-5"></i>
+          <span id="desktopWishlistCount" class="absolute -right-1 -top-1 hidden min-w-5 rounded-full bg-orange-500 px-1 text-center text-[10px] font-bold text-white"></span>
+        </button>
+
+        <button onclick="navigate('cart')" class="relative rounded-xl p-2 text-slate-600 hover:bg-orange-50 hover:text-orange-500">
+          <i data-lucide="shopping-cart" class="h-5 w-5"></i>
+          <span id="desktopCartCount" class="absolute -right-1 -top-1 hidden min-w-5 rounded-full bg-orange-500 px-1 text-center text-[10px] font-bold text-white"></span>
+        </button>
+
+        <div class="flex items-center gap-3">
+          <button onclick="navigate('profile')" class="flex items-center gap-2 rounded-xl p-1 hover:bg-slate-50">
+            <div id="topbarProfileInitials" class="grid h-9 w-9 place-items-center rounded-full bg-orange-100 font-bold text-orange-600">?</div>
+            <span id="topbarAccountLabel" class="text-sm font-bold">Account</span>
+          </button>
+          <button id="topbarAuthButton" onclick="currentUser ? logout() : navigate('login')" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-orange-200 hover:bg-orange-100">
+            Login
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Header -->
+    <header id="mobileHeader" class="sticky top-0 z-40 border-b border-slate-200/70 bg-white/95 backdrop-blur-sm md:hidden shadow-sm">
+      <div class="flex items-center justify-between px-4 py-3">
+        <button onclick="navigate('home')" class="flex items-center gap-2">
+          <img src="Assets/logo.JPG" alt="Zomax" class="h-9 w-9 object-contain rounded-xl" />
+          <span class="text-xl font-black tracking-tight">zomax<span class="text-orange-500">.</span></span>
+        </button>
+
+        <div class="flex items-center gap-1">
+          <button onclick="navigate('wishlist')" class="relative rounded-xl p-2 text-slate-600">
+            <i data-lucide="heart" class="h-5 w-5"></i>
+            <span id="mobileWishlistCount" class="absolute right-0 top-0 hidden min-w-4 rounded-full bg-orange-500 px-1 text-center text-[9px] font-bold text-white"></span>
+          </button>
+          <button onclick="navigate('cart')" class="relative rounded-xl p-2 text-slate-600">
+            <i data-lucide="shopping-cart" class="h-5 w-5"></i>
+            <span id="mobileCartCount" class="absolute right-0 top-0 hidden min-w-4 rounded-full bg-orange-500 px-1 text-center text-[9px] font-bold text-white"></span>
+          </button>
+          <button id="mobileAuthButton" onclick="currentUser ? logout() : navigate('login')" class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-orange-200 hover:bg-orange-100">
+            Login
+          </button>
+        </div>
+      </div>
+
+      <div class="px-4 pb-3">
+        <div class="relative">
+          <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+          <input
+            id="mobileSearch"
+            oninput="handleSearch(this.value)"
+            type="search"
+            placeholder="Search item"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-sm"
+          />
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 pb-28 pt-5 md:px-6 md:pb-10 md:pt-8">
+
+      <!-- HOME -->
+      <section id="page-home" class="page">
+        <div class="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+          <div class="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-6 py-8 text-white shadow-2xl sm:px-10 sm:py-12 hero-card">
+            <div class="relative z-10 max-w-xl">
+              <span class="mb-4 inline-flex rounded-full bg-orange-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-orange-300">
+                Nigeria's B2B marketplace
+              </span>
+              <h1 class="max-w-lg text-3xl font-black leading-tight sm:text-5xl">
+                Source products from trusted suppliers.
+              </h1>
+              <p class="mt-4 max-w-md text-sm leading-6 text-slate-300 sm:text-base">
+                Compare wholesale prices, minimum order quantities, and fulfillment terms from Nigerian and international vendors.
+              </p>
+              <div class="mt-7 flex flex-wrap gap-3">
+                <button onclick="navigate('shop')" class="px-5 py-3 text-sm font-bold rounded-3xl bg-orange-500 text-white hover:bg-orange-600">
+                  Find suppliers/Vendors
+                </button>
+                <button onclick="navigate('sell')" class="rounded-3xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/15">Sell wholesale</button>
+              </div>
+            </div>
+            <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-orange-500/20"></div>
+            <div class="absolute -bottom-32 right-10 h-72 w-72 rounded-full border-[40px] border-orange-500/10"></div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="rounded-3xl bg-orange-100 p-5">
+              <i data-lucide="truck" class="h-7 w-7 text-orange-600"></i>
+              <h3 class="mt-12 text-lg font-black text-slate-900">Fast delivery</h3>
+              <p class="mt-1 text-xs leading-5 text-slate-600">Get your orders quickly and safely.</p>
+            </div>
+            <div class="rounded-3xl bg-emerald-100 p-5">
+              <i data-lucide="shield-check" class="h-7 w-7 text-emerald-600"></i>
+              <h3 class="mt-12 text-lg font-black text-slate-900">Secure shopping</h3>
+              <p class="mt-1 text-xs leading-5 text-slate-600">Shop confidently with buyer protection.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-orange-500">Explore</p>
+              <h2 class="text-2xl font-black">Shop by category</h2>
+            </div>
+            <button onclick="navigate('categories')" class="text-sm font-bold text-orange-500">View all</button>
+          </div>
+          <div id="homeCategories" class="hide-scrollbar flex gap-4 overflow-x-auto pb-2"></div>
+        </div>
+
+        <div class="mt-8">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-orange-500">Popular now</p>
+              <h2 class="text-2xl font-black">Trending products</h2>
+            </div>
+            <button onclick="navigate('shop')" class="text-sm font-bold text-orange-500">See all</button>
+          </div>
+          <div id="homeProducts" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"></div>
+        </div>
+
+        <div class="mt-8 section-panel p-5 sm:p-7">
+          <div class="grid items-center gap-6 md:grid-cols-[1fr_auto]">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-widest text-orange-500">For entrepreneurs</p>
+              <h2 class="mt-2 text-2xl font-black">Turn your products into income.</h2>
+              <p class="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                Create a seller profile, list products and reach customers searching for what you sell.
+              </p>
+            </div>
+            <button onclick="navigate('sell')" class="btn-primary px-5 py-3 text-sm font-bold">
+              Open seller centre
+            </button>
+          </div>
+        </div>
+      </section>
+
+        <!-- LOGIN PAGE -->
+        <section id="page-login" class="page">
+          <div class="mx-auto max-w-md rounded-3xl bg-white p-6 shadow-md">
+            <p class="text-xs uppercase tracking-[0.35em] text-orange-500">Welcome back</p>
+            <h3 class="mt-3 text-2xl font-black text-slate-900">Login to Zomax</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-500">Use your email and password to continue.</p>
+            <form onsubmit="login(event)" class="mt-4 space-y-4">
+              <label class="block text-sm font-semibold text-slate-700">Email address
+                <input id="pageLoginEmail" type="email" required class="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              </label>
+              <label class="block text-sm font-semibold text-slate-700">Password
+                <input id="pageLoginPassword" type="password" required class="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              </label>
+              <button type="submit" class="w-full rounded-3xl bg-orange-500 px-5 py-3 text-sm font-black text-white">Continue</button>
+            </form>
+            <p class="mt-4 text-sm text-slate-500">New here? <a href="#" onclick="navigate('signup')" class="text-orange-500 font-bold">Create an account</a></p>
+          </div>
+        </section>
+
+        <!-- SIGNUP PAGE -->
+        <section id="page-signup" class="page">
+          <div class="mx-auto max-w-md rounded-3xl bg-white p-6 shadow-md">
+            <p class="text-xs uppercase tracking-[0.35em] text-orange-500">Create account</p>
+            <h3 class="mt-3 text-2xl font-black text-slate-900">Sign up for Zomax</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-500">Create your account to save addresses, payment methods and orders.</p>
+            <form onsubmit="signup(event)" class="mt-4 space-y-4">
+              <label class="block text-sm font-semibold text-slate-700">Full name
+                <input id="signupName" type="text" required class="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              </label>
+              <label class="block text-sm font-semibold text-slate-700">Email address
+                <input id="signupEmail" type="email" required class="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              </label>
+              <label class="block text-sm font-semibold text-slate-700">Password
+                <input id="signupPassword" type="password" required class="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" />
+              </label>
+              <button type="submit" class="w-full rounded-3xl bg-orange-500 px-5 py-3 text-sm font-black text-white">Create account</button>
+            </form>
+            <p class="mt-4 text-sm text-slate-500">Already have an account? <a href="#" onclick="navigate('login')" class="text-orange-500 font-bold">Login</a></p>
+          </div>
+        </section>
+
+      <!-- SHOP -->
+      <section id="page-shop" class="page">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-orange-500">Marketplace</p>
+            <h1 class="text-3xl font-black">Source products</h1>
+            <p id="shopResultText" class="mt-1 text-sm text-slate-500">Compare suppliers, vendors, wholesale prices, and delivery terms.</p>
+          </div>
+
+          <div class="flex gap-2 flex-wrap">
+            <select id="categoryFilter" onchange="applyFilters()" class="input-surface rounded-2xl px-4 py-3 text-sm font-semibold">
+              <option value="all">All categories</option>
+            </select>
+            <select id="sortFilter" onchange="applyFilters()" class="input-surface rounded-2xl px-4 py-3 text-sm font-semibold">
+              <option value="featured">Featured</option>
+              <option value="low">Price: low to high</option>
+              <option value="high">Price: high to low</option>
+              <option value="rating">Top rated</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <span class="mr-1 inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-slate-400"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i> Source by</span>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-emerald-50"><input id="verifiedFilter" type="checkbox" onchange="applyFilters()" class="accent-emerald-600" /> Verified suppliers</label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-blue-50"><input id="exportFilter" type="checkbox" onchange="applyFilters()" class="accent-blue-600" /> Export-ready</label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-orange-50"><input id="bulkFilter" type="checkbox" onchange="applyFilters()" class="accent-orange-600" /> Bulk-friendly</label>
+        </div>
+
+        <div id="shopProducts" class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"></div>
+      </section>
+
+      <!-- CATEGORIES -->
+      <section id="page-categories" class="page">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-orange-500">Browse</p>
+          <h1 class="text-3xl font-black">All categories</h1>
+          <p class="mt-1 text-sm text-slate-500">Find products by what you need.</p>
+        </div>
+        <div id="allCategories" class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"></div>
+      </section>
+
+      <!-- DEALS removed — replaced by Seller flow -->
+
+      <!-- CART -->
+      <section id="page-cart" class="page">
+        <div class="flex items-end justify-between">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-orange-500">Your selection</p>
+            <h1 class="text-3xl font-black">Shopping cart</h1>
+          </div>
+          <button onclick="clearCart()" class="text-sm font-bold text-red-500">Clear cart</button>
+        </div>
+        <div id="cartContent" class="mt-6"></div>
+      </section>
+
+      <!-- WISHLIST -->
+      <section id="page-wishlist" class="page">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-orange-500">Saved for later</p>
+          <h1 class="text-3xl font-black">Wishlist</h1>
+        </div>
+        <div id="wishlistContent" class="mt-6"></div>
+      </section>
+
+      <!-- ORDERS -->
+      <section id="page-orders" class="page">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-orange-500">Purchase history</p>
+          <h1 class="text-3xl font-black">Your orders</h1>
+        </div>
+        <div id="ordersContent" class="mt-6"></div>
+      </section>
+
+      <!-- ORDER CONFIRMATION -->
+      <section id="page-confirmation" class="page">
+        <div class="rounded-[40px] bg-white p-6 shadow-sm sm:p-8">
+          <div class="text-center">
+            <i data-lucide="check-circle-2" class="mx-auto h-14 w-14 text-emerald-500"></i>
+            <p class="mt-4 text-sm font-semibold uppercase tracking-[0.32em] text-emerald-600">Order placed</p>
+            <h1 class="mt-4 text-3xl font-black text-slate-900">Thank you for your purchase</h1>
+            <p class="mt-3 text-sm text-slate-500">We are processing your order and will update you shortly.</p>
+          </div>
+
+          <div id="confirmationContent" class="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"></div>
+
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button onclick="navigate('shop')" class="rounded-3xl bg-orange-500 px-6 py-3 text-sm font-black text-white hover:bg-orange-600">Continue shopping</button>
+            <button onclick="navigate('orders')" class="rounded-3xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-900">View your orders</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROFILE -->
+      <section id="page-profile" class="page">
+        <div class="relative overflow-hidden rounded-[40px] bg-slate-950 p-6 text-white shadow-[0_30px_90px_-30px_rgba(15,23,42,0.8)] sm:p-8">
+          <div class="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-orange-500/20 blur-3xl"></div>
+          <div class="pointer-events-none absolute bottom-0 left-1/3 h-32 w-64 rounded-full bg-amber-300/10 blur-3xl"></div>
+          <div class="relative">
+            <div class="flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
+              <div class="flex items-start gap-4 sm:gap-5">
+                <div id="profileInitials" class="grid h-20 w-20 shrink-0 place-items-center rounded-[26px] bg-gradient-to-br from-orange-400 to-orange-600 text-3xl font-black shadow-xl shadow-orange-950/30 ring-4 ring-white/10">?</div>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-[11px] font-bold uppercase tracking-[0.32em] text-orange-300">Account overview</p>
+                    <span class="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200">Personal account</span>
+                  </div>
+                  <h1 id="profileDisplayName" class="mt-3 truncate text-3xl font-black tracking-tight text-white sm:text-4xl">Your name</h1>
+                  <p id="profileContactLine" class="mt-2 max-w-xl text-sm leading-6 text-slate-300">Email and phone will appear here</p>
+                  <div id="profilePrimaryInfo" class="mt-5 min-w-0 max-w-full space-y-2 overflow-hidden"></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 self-start">
+                <span class="grid h-10 w-10 place-items-center rounded-2xl bg-white/10 text-orange-200 ring-1 ring-white/10"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                <div>
+                  <p class="text-xs font-bold text-white">Your account</p>
+                  <p class="mt-0.5 text-xs text-slate-400">Private and secure</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8 grid grid-cols-3 gap-2 border-t border-white/10 pt-5 sm:gap-3">
+              <div class="rounded-2xl bg-white/[0.07] px-3 py-3 ring-1 ring-white/10 sm:px-4">
+                <div class="flex items-center gap-2 text-slate-400"><i data-lucide="package" class="h-4 w-4"></i><p class="text-[10px] font-bold uppercase tracking-[0.18em]">Orders</p></div>
+                <p id="profileOrdersCount" class="mt-2 text-2xl font-black text-white">0</p>
+              </div>
+              <div class="rounded-2xl bg-white/[0.07] px-3 py-3 ring-1 ring-white/10 sm:px-4">
+                <div class="flex items-center gap-2 text-slate-400"><i data-lucide="heart" class="h-4 w-4"></i><p class="text-[10px] font-bold uppercase tracking-[0.18em]">Wishlist</p></div>
+                <p id="profileWishlistCount" class="mt-2 text-2xl font-black text-white">0</p>
+              </div>
+              <div class="rounded-2xl bg-white/[0.07] px-3 py-3 ring-1 ring-white/10 sm:px-4">
+                <div class="flex items-center gap-2 text-slate-400"><i data-lucide="calendar-days" class="h-4 w-4"></i><p class="text-[10px] font-bold uppercase tracking-[0.18em]">Member since</p></div>
+                <p id="profileSince" class="mt-2 text-2xl font-black text-white">—</p>
+              </div>
+            </div>
+
+            <div class="mt-5 flex justify-end">
+              <button id="profileDeactivateBtn" onclick="deactivateAccount()" class="hidden rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-200 transition hover:bg-red-500/20">Deactivate account</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <div id="profileActionCards" class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <button onclick="navigate('orders')" class="group rounded-[32px] border border-slate-200 bg-white p-5 text-left shadow-lg shadow-slate-200/30 transition hover:-translate-y-0.5 hover:shadow-xl">
+                <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-orange-100 text-orange-600 transition group-hover:bg-orange-200">
+                  <i data-lucide="package" class="h-5 w-5"></i>
+                </div>
+                <div class="mt-4">
+                  <p class="text-sm font-semibold text-slate-700">My orders</p>
+                  <p class="mt-1 text-sm text-slate-400">Track purchases and delivery</p>
+                </div>
+              </button>
+              <button onclick="navigate('wishlist')" class="group rounded-[32px] border border-slate-200 bg-white p-5 text-left shadow-lg shadow-slate-200/30 transition hover:-translate-y-0.5 hover:shadow-xl">
+                <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-pink-100 text-pink-600 transition group-hover:bg-pink-200">
+                  <i data-lucide="heart" class="h-5 w-5"></i>
+                </div>
+                <div class="mt-4">
+                  <p class="text-sm font-semibold text-slate-700">Wishlist</p>
+                  <p class="mt-1 text-sm text-slate-400">Saved products for later</p>
+                </div>
+              </button>
+            </div>
+            <button onclick="navigate('sell')" class="group flex items-center gap-4 rounded-[32px] border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/30 transition hover:-translate-y-0.5 hover:shadow-xl">
+              <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-emerald-100 text-emerald-600 transition group-hover:bg-emerald-200">
+                <i data-lucide="store" class="h-5 w-5"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-slate-700">Seller centre</p>
+                <p class="mt-1 text-sm text-slate-400">List products and manage your store</p>
+              </div>
+            </button>
+          </div>
+
+          <div id="profileSettingsSection" class="rounded-[32px] bg-white p-5 shadow-lg shadow-slate-200/40">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <h2 class="font-black text-slate-900">Account settings</h2>
+                <p class="mt-2 text-sm text-slate-500">Manage profile, address, and payment details in one place.</p>
+              </div>
+              <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-black uppercase tracking-[0.35em] text-orange-600">Secure</span>
+            </div>
+            <div id="profileSettingsContent" class="mt-6 space-y-2">
+              <button onclick="openAccountSettings('profile')" class="flex w-full items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-left text-sm font-semibold text-slate-700 transition hover:border-orange-200 hover:bg-orange-50">
+                <span>Edit profile</span>
+                <i data-lucide="chevron-right" class="h-4 w-4 text-slate-400"></i>
+              </button>
+              <button onclick="openAccountSettings('address')" class="flex w-full items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-left text-sm font-semibold text-slate-700 transition hover:border-orange-200 hover:bg-orange-50">
+                <span>Delivery addresses</span>
+                <i data-lucide="chevron-right" class="h-4 w-4 text-slate-400"></i>
+              </button>
+              <button onclick="openAccountSettings('payment')" class="flex w-full items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-left text-sm font-semibold text-slate-700 transition hover:border-orange-200 hover:bg-orange-50">
+                <span>Payment methods</span>
+                <i data-lucide="chevron-right" class="h-4 w-4 text-slate-400"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SELLER DASHBOARD -->
+      <section id="page-dashboard" class="page">
+        <div class="rounded-3xl bg-gradient-to-r from-slate-950 to-slate-900 p-6 text-white sm:p-10">
+          <p class="text-xs font-bold uppercase tracking-widest text-orange-300">Dashboard</p>
+          <h1 class="mt-2 text-3xl font-black sm:text-4xl">store overview</h1>
+          <p class="mt-3 max-w-xl text-sm leading-6 text-slate-300">
+            Track your listings, sales, performance, and grow your store on Zomax.
+          </p>
+        </div>
+
+        <!-- Key Metrics -->
+        <div id="dashboardStats" class="mt-6 grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-4"></div>
+        <div id="dashboardAnalytics" class="mt-4 grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-2"></div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <!-- Left Column: Listings & Sales -->
+          <div class="space-y-6">
+            <!-- Recent Listings -->
+            <div class="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+              <div class="mb-5 flex items-center justify-between gap-3">
+                <div>
+                  <h2 class="text-xl font-black">Your listings</h2>
+                  <p class="mt-1 text-sm text-slate-500">Products published to your store</p>
+                </div>
+                <button onclick="navigate('sell')" class="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-xs font-black text-white hover:bg-orange-600">
+                  <i data-lucide="plus" class="h-4 w-4"></i>
+                  New product
+                </button>
+              </div>
+              <div id="dashboardProducts" class="space-y-3"></div>
+            </div>
+
+            <!-- Top Performing Products -->
+            <div class="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+              <div>
+                <h2 class="text-xl font-black">Top performing</h2>
+                <p class="mt-1 text-sm text-slate-500">Your best-selling products</p>
+              </div>
+              <div id="dashboardTopProducts" class="mt-5 space-y-3"></div>
+            </div>
+
+            <!-- Sales Activity -->
+            <div class="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+              <div>
+                <h2 class="text-xl font-black">Recent sales</h2>
+                <p class="mt-1 text-sm text-slate-500">Latest orders from your customers</p>
+              </div>
+              <div id="dashboardSalesActivity" class="mt-5 space-y-3"></div>
+            </div>
+          </div>
+
+          <!-- Right Column: Actions & Info -->
+          <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+              <h2 class="mb-5 text-xl font-black">Quick actions</h2>
+              <div class="space-y-2">
+                <button onclick="navigate('sell')" class="flex w-full items-center justify-between rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-left text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
+                  <span>List a product</span>
+                  <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                </button>
+                <button onclick="navigate('shop')" class="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
+                  <span>View storefront</span>
+                  <i data-lucide="external-link" class="h-4 w-4"></i>
+                </button>
+                <button onclick="navigate('orders')" class="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
+                  <span>View all orders</span>
+                  <i data-lucide="package" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Store Performance -->
+            <div class="rounded-3xl bg-gradient-to-br from-orange-50 to-orange-100 p-5 sm:p-6">
+              <h2 class="mb-4 text-xl font-black text-slate-900">Store health</h2>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-semibold text-slate-700">Response rate</span>
+                  <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">100%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-semibold text-slate-700">Positive feedback</span>
+                  <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">5.0 ★</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-semibold text-slate-700">Active listings</span>
+                  <span id="storeActiveListing" class="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer Feedback -->
+            <div class="rounded-3xl bg-white p-5 shadow-sm sm:p-6">
+              <h2 class="mb-4 text-xl font-black">Customer feedback</h2>
+              <div id="dashboardReviews" class="space-y-3"></div>
+            </div>
+
+            <div class="rounded-3xl border border-orange-100 bg-orange-50/60 p-5 shadow-sm sm:p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">B2B sourcing</p>
+                  <h2 class="mt-2 text-xl font-black text-slate-900">Buyer inquiries</h2>
+                  <p class="mt-1 text-sm text-slate-500">Review quote requests from local and overseas buyers.</p>
+                </div>
+                <i data-lucide="messages-square" class="h-6 w-6 text-orange-500"></i>
+              </div>
+              <div id="dashboardQuotes" class="mt-4 space-y-3"></div>
+            </div>
+
+            <div class="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-5 shadow-sm sm:p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Trust centre</p>
+                  <h2 class="mt-2 text-xl font-black text-slate-900">Supplier/ Vendor verification</h2>
+                  <p class="mt-1 text-sm text-slate-600">Build buyer confidence with verified business details and proof of capability.</p>
+                </div>
+                <i data-lucide="badge-check" class="h-6 w-6 text-emerald-600"></i>
+              </div>
+              <div id="verificationSummary" class="mt-4"></div>
+            </div>
+
+            <!-- Store Settings -->
+            <div class="rounded-3xl bg-slate-50 p-5 sm:p-6">
+              <h2 class="mb-4 text-lg font-black text-slate-900">Store settings</h2>
+              <button onclick="openStoreSettings()" class="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                <span>Edit store info</span>
+                <i data-lucide="settings" class="h-4 w-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin section removed -->
+
+      <!-- SELL -->
+      <section id="page-sell" class="page">
+        <div class="rounded-3xl bg-orange-500 p-6 text-white sm:p-10">
+          <p class="text-xs font-bold uppercase tracking-widest text-orange-100">Zomax vendor centre</p>
+          <h1 class="mt-2 text-3xl font-black sm:text-4xl">Start listing online.</h1>
+          <p class="mt-3 max-w-xl text-sm leading-6 text-orange-50">
+            Add your first product and start building your customer base.
+          </p>
+        </div>
+
+        <form onsubmit="submitProduct(event)" class="mt-6 rounded-3xl bg-white p-5 shadow-sm sm:p-8">
+          <h2 class="text-xl font-black">List a product</h2>
+          <p class="mt-1 text-sm text-slate-500">This demo stores the listing in your current browser session.</p>
+
+          <div class="mt-6 grid gap-4 sm:grid-cols-2">
+            <label class="text-sm font-bold">
+              Product name
+              <input id="sellerName" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="e.g. Classic leather sneakers" />
+            </label>
+
+            <label class="text-sm font-bold">
+              Category
+              <select id="sellerCategory" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal"></select>
+            </label>
+
+            <label class="text-sm font-bold">
+              Price
+              <input id="sellerPrice" required type="number" min="1" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="45000" />
+            </label>
+
+            <label class="text-sm font-bold">
+              Wholesale price
+              <input id="sellerWholesalePrice" type="number" min="1" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="Price for bulk buyers" />
+            </label>
+
+            <label class="text-sm font-bold">
+              Minimum order quantity
+              <input id="sellerMinimumOrder" type="number" min="1" value="1" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="e.g. 10" />
+            </label>
+
+            <label class="text-sm font-bold">
+              Fulfillment lead time
+              <input id="sellerLeadTime" type="text" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="e.g. Ships in 7-10 days" />
+            </label>
+
+            <label class="text-sm font-bold">
+              Stock quantity
+              <input id="sellerStock" required type="number" min="1" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="10" />
+            </label>
+
+            <div class="sm:col-span-2 rounded-3xl border border-orange-100 bg-orange-50/50 p-4 sm:p-5">
+              <div class="flex items-start gap-3">
+                <div class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200"><i data-lucide="images" class="h-5 w-5"></i></div>
+                <div>
+                  <p class="text-sm font-black text-slate-900">Product media</p>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">Upload clear product photos and an optional short product video directly from your device.</p>
+                </div>
+              </div>
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <label for="sellerImages" class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-200 bg-white p-4 text-center transition hover:border-orange-400 hover:bg-orange-50">
+                  <i data-lucide="image-plus" class="h-6 w-6 text-orange-500"></i>
+                  <span class="mt-2 text-sm font-bold text-slate-700">Choose product photos</span>
+                  <span class="mt-1 text-[11px] text-slate-400">JPG, PNG, or WebP · multiple allowed</span>
+                  <input id="sellerImages" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" onchange="previewProductMedia(event)" />
+                </label>
+                <label for="sellerVideo" class="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-200 bg-white p-4 text-center transition hover:border-blue-400 hover:bg-blue-50">
+                  <i data-lucide="video" class="h-6 w-6 text-blue-500"></i>
+                  <span class="mt-2 text-sm font-bold text-slate-700">Choose product video</span>
+                  <span class="mt-1 text-[11px] text-slate-400">MP4, WebM, or MOV · one video</span>
+                  <input id="sellerVideo" type="file" accept="video/mp4,video/webm,video/quicktime" class="hidden" onchange="previewProductMedia(event)" />
+                </label>
+              </div>
+              <div id="sellerMediaPreview" class="mt-4 grid grid-cols-3 gap-2 empty:hidden sm:grid-cols-5"></div>
+              <p class="mt-3 text-[11px] text-slate-500">The first photo becomes the cover image. Files are stored locally in this browser for this demo.</p>
+            </div>
+
+            <label class="text-sm font-bold sm:col-span-2">
+              Description
+              <textarea id="sellerDescription" rows="4" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="Describe your product"></textarea>
+            </label>
+
+            <label class="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-slate-700 sm:col-span-2">
+              <input id="sellerInternational" type="checkbox" class="mt-1 h-4 w-4 accent-orange-500" />
+              <span><span class="block">I can ship internationally</span><span class="mt-1 block text-xs font-normal leading-5 text-slate-500">Show an export-ready badge to overseas buyers.</span></span>
+            </label>
+          </div>
+
+          <button class="mt-6 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700">
+            Publish product
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur md:hidden">
+      <div class="mx-auto grid max-w-lg grid-cols-5 gap-2 items-center">
+        <button data-nav="home" onclick="navigate('home')" class="mobile-nav-item flex flex-col items-center gap-1 py-2 text-[10px] font-bold text-orange-500">
+          <span class="grid h-9 w-9 place-items-center rounded-2xl bg-orange-100 text-orange-600"><i data-lucide="home" class="h-5 w-5"></i></span>
+          Home
+        </button>
+        <button data-nav="shop" onclick="navigate('shop')" class="mobile-nav-item flex flex-col items-center gap-1 py-2 text-[10px] font-bold text-slate-400">
+          <span class="grid h-9 w-9 place-items-center rounded-2xl bg-slate-100 text-slate-600"><i data-lucide="grid-2x2" class="h-5 w-5"></i></span>
+          Shop
+        </button>
+
+        <!-- Prominent center CTA: Seller Dashboard -->
+        <div class="flex justify-center">
+          <button onclick="navigate('dashboard')" aria-label="Seller dashboard" class="-mt-4 grid h-16 w-16 place-items-center rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600 transition">
+            <!-- Store SVG icon -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+              <path d="M3 7l1.5-2h15L21 7" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 7v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 10h6v6H9z" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <button data-nav="orders" onclick="navigate('orders')" class="mobile-nav-item flex flex-col items-center gap-1 py-2 text-[10px] font-bold text-slate-400">
+          <span class="grid h-9 w-9 place-items-center rounded-2xl bg-slate-100 text-slate-600"><i data-lucide="package" class="h-5 w-5"></i></span>
+          Orders
+        </button>
+        <button data-nav="profile" onclick="navigate('profile')" class="mobile-nav-item flex flex-col items-center gap-1 py-2 text-[10px] font-bold text-slate-400">
+          <span class="grid h-9 w-9 place-items-center rounded-2xl bg-slate-100 text-slate-600"><i data-lucide="user-round" class="h-5 w-5"></i></span>
+          Account
+        </button>
+      </div>
+    </nav>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white sm:max-w-2xl sm:rounded-3xl">
+        <div id="productModalContent"></div>
+      </div>
+    </div>
+
+    <!-- Request For Quote Modal -->
+    <div id="quoteModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-w-xl sm:rounded-3xl sm:p-7">
+        <div id="quoteModalContent"></div>
+      </div>
+    </div>
+
+    <!-- Supplier Response Modal -->
+    <div id="quoteResponseModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-w-xl sm:rounded-3xl sm:p-7">
+        <div id="quoteResponseModalContent"></div>
+      </div>
+    </div>
+
+    <!-- Supplier Verification Modal -->
+    <div id="verificationModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-w-2xl sm:rounded-3xl sm:p-7">
+        <div id="verificationModalContent"></div>
+      </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white sm:max-w-2xl sm:rounded-3xl p-5">
+        <div id="orderDetailContent"></div>
+      </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal fixed inset-0 z-50 grid place-items-end bg-black/60 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-6 sm:max-w-md sm:rounded-3xl sm:p-8 shadow-lg">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1">
+            <h2 class="text-2xl font-black text-slate-900">Are you sure?</h2>
+            <p id="confirmModalMessage" class="mt-2 text-sm text-slate-600">This action cannot be undone.</p>
+          </div>
+          <button onclick="closeModal('confirmModal')" class="rounded-xl p-2 text-slate-500 hover:bg-slate-100">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="mt-6 flex gap-3 justify-end">
+          <button id="confirmModalNo" class="rounded-3xl border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+          <button id="confirmModalYes" class="rounded-3xl bg-red-600 px-5 py-2 text-sm font-black text-white">Confirm</button>
+        </div>
+      </div>
+
+        <!-- Edit Review Modal -->
+        <div id="editReviewModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+          <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-w-2xl sm:rounded-3xl sm:p-7">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <h2 class="text-2xl font-black">Edit review</h2>
+                <p class="text-sm text-slate-500">Update your review and rating.</p>
+              </div>
+              <button onclick="closeModal('editReviewModal')" class="rounded-xl p-2 hover:bg-slate-100">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+            <div class="mt-4 space-y-3">
+              <label class="block text-sm font-semibold">Rating</label>
+              <select id="editReviewRating" class="mt-2 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+
+              <label class="block text-sm font-semibold">Review</label>
+              <textarea id="editReviewText" rows="4" class="mt-2 w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm"></textarea>
+            </div>
+            <div class="mt-6 flex gap-3 justify-end">
+              <button onclick="closeModal('editReviewModal')" class="rounded-3xl border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+              <button onclick="saveEditedReview()" class="rounded-3xl bg-orange-500 px-5 py-2 text-sm font-black text-white">Save</button>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel w-full rounded-t-3xl bg-white p-5 sm:max-w-lg sm:rounded-3xl sm:p-7">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-black">Checkout</h2>
+          <button onclick="closeModal('checkoutModal')" class="rounded-xl p-2 hover:bg-slate-100">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <form onsubmit="placeOrder(event)" class="mt-5 space-y-4">
+          <label class="block text-sm font-bold">
+            Full name
+            <input id="checkoutName" required class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" value="" placeholder="Enter your full name" />
+          </label>
+
+          <label class="block text-sm font-bold">
+            Phone number
+            <input id="checkoutPhone" required type="tel" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" value="" placeholder="+234 800 000 0000" />
+          </label>
+
+          <label class="block text-sm font-bold">
+            Delivery address
+            <textarea id="checkoutAddress" required rows="3" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal" placeholder="Enter complete delivery address"></textarea>
+          </label>
+
+          <label class="block text-sm font-bold">
+            Payment method
+            <select id="checkoutPaymentMethod" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 font-normal">
+              <option value="">Select payment method</option>
+              <option value="Pay on delivery">Pay on delivery</option>
+              <option value="Card payment">Card payment</option>
+              <option value="Bank transfer">Bank transfer</option>
+            </select>
+          </label>
+
+          <div id="checkoutTotal" class="rounded-xl bg-orange-50 p-4 text-sm"></div>
+
+          <button class="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-black text-white hover:bg-orange-600">
+            Place order
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Account Settings Modal -->
+    <div id="accountModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-w-2xl sm:rounded-3xl sm:p-7">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-black">Account settings</h2>
+            <p class="text-sm text-slate-500">Manage profile, address and payment details.</p>
+          </div>
+          <button onclick="closeModal('accountModal')" class="rounded-xl p-2 hover:bg-slate-100">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div id="accountModalContent" class="mt-6"></div>
+      </div>
+    </div>
+
+    <!-- Store Settings Auth Modal -->
+    <div id="storeAuthModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-6">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-[30px] border border-orange-100 bg-white/95 p-0 shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur-xl sm:max-w-lg sm:rounded-[32px] ring-1 ring-slate-200/80">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 via-white to-amber-50 p-5 sm:p-6">
+          <div class="flex items-start gap-3">
+            <div class="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
+              <i data-lucide="store" class="h-5 w-5"></i>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-orange-500">Store access</p>
+              <h2 class="mt-2 text-2xl font-black text-slate-900">Unlock your dashboard</h2>
+              <p class="mt-1 text-sm text-slate-500">Sign in to manage your store profile, policies and payments.</p>
+            </div>
+          </div>
+          <button onclick="closeModal('storeAuthModal')" class="rounded-2xl border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div id="storeAuthContent" class="p-5 sm:p-6"></div>
+      </div>
+    </div>
+
+    <!-- Store Settings Modal -->
+    <div id="storeSettingsModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-5">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-w-2xl sm:rounded-3xl sm:p-7">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-black">Store settings</h2>
+            <p class="text-sm text-slate-500">Manage your store profile, policies and business info.</p>
+          </div>
+          <button onclick="closeModal('storeSettingsModal')" class="rounded-xl p-2 hover:bg-slate-100">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div id="storeSettingsContent" class="mt-6"></div>
+      </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal fixed inset-0 z-50 grid place-items-end bg-slate-950/50 p-0 sm:place-items-center sm:p-6">
+      <div class="modal-panel w-full max-h-[92vh] overflow-y-auto rounded-t-[28px] border border-orange-100 bg-white/95 p-0 shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur-xl sm:max-w-lg sm:rounded-[32px]">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 via-white to-orange-50 p-5 sm:p-6">
+          <div class="flex items-start gap-3">
+            <div class="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-200">
+              <i data-lucide="user-round" class="h-5 w-5"></i>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-[0.28em] text-orange-500">Welcome back</p>
+              <h2 class="mt-2 text-2xl font-black text-slate-900">Sign in to Zomax</h2>
+              <p class="mt-1 text-sm text-slate-500">Continue with your saved account and keep shopping easily.</p>
+            </div>
+          </div>
+          <button onclick="closeModal('loginModal')" class="rounded-2xl border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <div id="loginModalContent" class="p-5 sm:p-6"></div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast fixed bottom-24 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl md:bottom-6">
+      <i data-lucide="check-circle-2" class="h-5 w-5 text-emerald-400"></i>
+      <span id="toastMessage"></span>
+    </div>
+    <input id="accountImportInput" type="file" accept="application/json" style="display:none" />
+  </div>
+
+</body>

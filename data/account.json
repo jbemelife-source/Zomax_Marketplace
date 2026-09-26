@@ -1,0 +1,21 @@
+{
+<<<<<<< HEAD
+  "name": "",
+  "username": "",
+  "email": "",
+  "phone": "",
+  "address": "",
+  "paymentMethod": "",
+  "cardName": "",
+  "cardLast4": "",
+  "memberSince": ""
+}
+
+
+=======
+  "username": "natyyxx",
+  "name": "Natyyxx",
+  "email": "natyyxx@gmail.com",
+  "memberSince": "2026"
+}
+>>>>>>> 81ca06f (Backend ready)
