@@ -473,18 +473,12 @@ function navigate(page) {
     button.classList.toggle('active', button.dataset.nav === page);
   });
 
-  // Only the home page keeps the site header; all other views are full-screen and header-free.
   const desktopHeader = document.getElementById('desktopHeader');
   const mobileHeader = document.getElementById('mobileHeader');
   const isMobileViewport = window.innerWidth < 768;
-
-  if (page === 'home') {
-    if (desktopHeader) desktopHeader.classList.toggle('hidden', isMobileViewport);
-    if (mobileHeader) mobileHeader.classList.toggle('hidden', !isMobileViewport);
-  } else {
-    if (desktopHeader) desktopHeader.classList.add('hidden');
-    if (mobileHeader) mobileHeader.classList.add('hidden');
-  }
+  const isAuthPage = page === 'login' || page === 'signup';
+  if (desktopHeader) desktopHeader.classList.toggle('hidden', isMobileViewport || isAuthPage);
+  if (mobileHeader) mobileHeader.classList.toggle('hidden', !isMobileViewport || isAuthPage);
 
   if (targetId === 'page-confirmation') renderOrderConfirmation();
 
