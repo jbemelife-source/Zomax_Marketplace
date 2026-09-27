@@ -233,7 +233,7 @@
       <section id="page-auth-start" class="page">
         <div class="auth-welcome">
           <div class="auth-welcome-copy">
-            <button type="button" class="auth-brand" onclick="navigate('auth-start')"><img src="Assets/logo.JPG" alt="" /><span>zomax<span>.</span></span></button>
+            <button type="button" class="auth-brand" onclick="navigate('home')"><img src="Assets/logo.JPG" alt="" /><span>zomax<span>.</span></span></button>
             <p class="auth-eyebrow">Nigeria's wholesale marketplace</p>
             <h1>Source smarter.<br /><em>Grow your business.</em></h1>
             <p class="auth-welcome-description">Find products, compare supplier terms and manage your buying activity in one place.</p>
@@ -263,12 +263,6 @@
         </div>
 
         <section class="home-marketplace-hero" aria-label="Find products and suppliers">
-          <aside class="home-departments">
-            <div class="home-departments-heading"><i data-lucide="layout-grid"></i><span>Source by category</span></div>
-            <div id="homeCategories" class="home-category-list"></div>
-            <button class="home-all-categories" onclick="navigate('categories')">All categories <i data-lucide="arrow-right"></i></button>
-          </aside>
-
           <div class="home-hero-main">
             <img class="home-hero-image" src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1600&q=80" alt="Warehouse shelves ready for wholesale orders" />
             <div class="home-hero-shade"></div>
@@ -285,19 +279,6 @@
               <div class="home-search-hints"><span>Popular:</span><button type="button" onclick="searchMarketplace('electronics')">Electronics</button><button type="button" onclick="searchMarketplace('fashion')">Fashion</button><button type="button" onclick="searchMarketplace('home')">Home &amp; Living</button></div>
             </div>
           </div>
-
-          <aside class="home-buyer-panel">
-            <div class="home-buyer-intro"><span class="home-round-icon"><i data-lucide="package-search"></i></span><p>Buying for your business?</p><h2>Make sourcing simpler.</h2><span>Find listings, compare minimum orders and send quote requests.</span></div>
-            <button class="home-buyer-link" onclick="navigate('shop')">Explore products <i data-lucide="arrow-right"></i></button>
-            <div class="home-seller-prompt"><i data-lucide="store"></i><div><b>Have products to sell?</b><span>Reach buyers on Zomax</span></div><button aria-label="Open seller centre" onclick="navigate('sell')"><i data-lucide="arrow-up-right"></i></button></div>
-          </aside>
-        </section>
-
-        <section class="home-trust-row" aria-label="Marketplace details">
-          <div><i data-lucide="tags"></i><span><b>Wholesale terms</b><small>Price and minimum order quantity</small></span></div>
-          <div><i data-lucide="store"></i><span><b>Seller information</b><small>Seller name and location</small></span></div>
-          <div><i data-lucide="messages-square"></i><span><b>Supplier quotes</b><small>Ask about price and order quantity</small></span></div>
-          <div><i data-lucide="heart"></i><span><b>Saved items and orders</b><small>Keep track of your activity</small></span></div>
         </section>
 
         <section class="home-section home-category-section">
@@ -320,7 +301,7 @@
         <!-- LOGIN PAGE -->
         <section id="page-login" class="page auth-form-page">
           <div class="auth-form-card">
-            <button type="button" class="auth-back-link" onclick="navigate('auth-start')"><i data-lucide="arrow-left"></i> Back</button>
+            <button type="button" class="auth-back-link" onclick="navigate('home')"><i data-lucide="arrow-left"></i> Back to shopping</button>
             <p class="text-xs uppercase tracking-[0.35em] text-orange-500">Welcome back</p>
             <h3 class="mt-3 text-2xl font-black text-slate-900">Login to Zomax</h3>
             <p class="mt-2 text-sm leading-6 text-slate-500">Sign in with the email and password you chose when you created your account.</p>
@@ -341,7 +322,7 @@
         <!-- SIGNUP PAGE -->
         <section id="page-signup" class="page auth-form-page">
           <div class="auth-form-card">
-            <button type="button" class="auth-back-link" onclick="navigate('auth-start')"><i data-lucide="arrow-left"></i> Back</button>
+            <button type="button" class="auth-back-link" onclick="navigate('home')"><i data-lucide="arrow-left"></i> Back to shopping</button>
             <p class="text-xs uppercase tracking-[0.35em] text-orange-500">Create account</p>
             <h3 class="mt-3 text-2xl font-black text-slate-900">Sign up for Zomax</h3>
             <p class="mt-2 text-sm leading-6 text-slate-500">Create your account to save addresses, payment methods and orders.</p>

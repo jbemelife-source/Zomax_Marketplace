@@ -341,7 +341,7 @@ textarea:focus {
 
 .home-marketplace-hero {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 220px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   min-height: 382px;
   margin-top: 10px;
@@ -460,15 +460,7 @@ textarea:focus {
   .desktop-main-nav .desktop-nav-item { padding-right: 8px; padding-left: 8px; font-size: 0.78rem; }
   .home-category-tile { flex-basis: 33.333%; }
   .home-product-item { flex-basis: calc((100% - 32px) / 3); }
-  .home-marketplace-hero { grid-template-columns: 190px minmax(0, 1fr); }
-  .home-buyer-panel { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; padding: 13px 16px; }
-  .home-buyer-intro { display: grid; grid-template-columns: 42px auto; grid-template-rows: auto auto; align-items: center; column-gap: 12px; }
-  .home-buyer-intro .home-round-icon { grid-row: 1 / 3; }
-  .home-buyer-intro > p { margin: 0; }
-  .home-buyer-intro h2 { margin: 2px 0 0; font-size: 1rem; }
-  .home-buyer-intro > span:last-child { display: none; }
-  .home-buyer-link { min-width: 150px; padding: 10px; border: 1px solid #dce7df; }
-  .home-seller-prompt { display: none; }
+  .home-marketplace-hero { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (min-width: 701px) and (max-width: 950px) {
@@ -499,25 +491,6 @@ textarea:focus {
   .home-search select { grid-column: 1 / 3; grid-row: 2; height: 34px; margin: 0 0 0 6px; padding-left: 0; border-left: 0; border-top: 1px solid #e4e9e5; }
   .home-search button { grid-column: 3; grid-row: 1 / 3; height: 100%; min-height: 48px; min-width: 72px; padding: 0 11px; }
   .home-search-hints { gap: 8px; font-size: 0.6rem; }
-  .home-departments { order: 1; padding: 13px; }
-  .home-departments-heading { margin-bottom: 7px; }
-  .home-category-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 9px; }
-  .home-category-link { min-height: 34px; grid-template-columns: 16px minmax(0, 1fr) 12px; font-size: 0.64rem; }
-  .home-all-categories { margin-top: 6px; padding-top: 8px; }
-  .home-buyer-panel { order: 2; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 11px; }
-  .home-buyer-intro { grid-template-columns: 34px auto; column-gap: 9px; }
-  .home-round-icon { width: 34px; height: 34px; }
-  .home-round-icon i { width: 17px; }
-  .home-buyer-intro > p { font-size: 0.59rem; }
-  .home-buyer-intro h2 { font-size: 0.84rem; }
-  .home-buyer-link { min-width: 0; gap: 6px; padding: 8px; font-size: 0.62rem; }
-  .home-trust-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .home-trust-row > div { min-height: 58px; padding: 9px; gap: 8px; }
-  .home-trust-row > div:nth-child(3) { border-left: 0; border-top: 1px solid #e9edea; }
-  .home-trust-row > div:nth-child(4) { border-top: 1px solid #e9edea; }
-  .home-trust-row > div > i { width: 18px; flex-basis: 18px; }
-  .home-trust-row b { font-size: 0.61rem; }
-  .home-trust-row small { font-size: 0.54rem; }
   .home-section { margin-top: 28px; }
   .home-section-heading { align-items: start; gap: 8px; }
   .home-section-heading h2 { font-size: 1.16rem; }

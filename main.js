@@ -485,11 +485,13 @@ function navigate(page) {
   };
 
   const publicAuthPages = ['auth-start', 'login', 'signup'];
+  const guestPages = ['home', 'shop', 'categories', 'cart', 'wishlist'];
   const isKnownPage = Object.prototype.hasOwnProperty.call(pageIds, page);
-  if (!currentUser && isKnownPage && !publicAuthPages.includes(page)) {
+  const requiresAccount = !publicAuthPages.includes(page) && !guestPages.includes(page);
+  if (!currentUser && isKnownPage && requiresAccount) {
     sessionStorage.setItem('zomax_auth_return_to', page);
   }
-  const destination = !currentUser && !publicAuthPages.includes(page) ? 'auth-start' : page;
+  const destination = !currentUser && requiresAccount ? 'auth-start' : page;
   const targetId = pageIds[destination] || pageIds['auth-start'];
   if (window.location.hash !== `#${destination}`) {
     window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${destination}`);
@@ -560,7 +562,8 @@ function refreshIcons() {
 }
 
 function renderCategories() {
-  document.getElementById("homeCategories").innerHTML = categories.map(category => `
+  const homeCategoryList = document.getElementById("homeCategories");
+  if (homeCategoryList) homeCategoryList.innerHTML = categories.map(category => `
     <button class="home-category-link" onclick="filterByCategory('${category.id}')"><i data-lucide="${category.icon}"></i><span>${category.name}</span><i data-lucide="chevron-right"></i></button>
   `).join("");
   document.getElementById("homeCategoryTiles").innerHTML = categories.slice(0, 8).map((category, index) => `
